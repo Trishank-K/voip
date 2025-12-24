@@ -23,6 +23,17 @@ export default function CallPage() {
     ],
   };
 
+  // Ensure local video is always attached to the video element
+  useEffect(() => {
+    if (localStreamRef.current && localVideoRef.current && joined) {
+      console.log('Attaching stream to video element');
+      localVideoRef.current.srcObject = localStreamRef.current;
+      localVideoRef.current.play().catch(err => {
+        console.error('Error playing local video:', err);
+      });
+    }
+  }, [joined]);
+
   useEffect(() => {
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || '';
     socketRef.current = io(socketUrl);
@@ -68,19 +79,43 @@ export default function CallPage() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user'
+        },
         audio: true,
       });
 
+      console.log('Stream obtained:', stream.id);
+      console.log('Video tracks:', stream.getVideoTracks().map(t => ({
+        id: t.id,
+        label: t.label,
+        enabled: t.enabled,
+        readyState: t.readyState
+      })));
+
       localStreamRef.current = stream;
+      
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
-        console.log('Local stream set:', stream.getTracks());
+        localVideoRef.current.muted = true;
+        localVideoRef.current.playsInline = true;
         
-        // Ensure video plays
+        // Wait for metadata to load before playing
+        await new Promise<void>((resolve) => {
+          if (localVideoRef.current) {
+            localVideoRef.current.onloadedmetadata = () => {
+              console.log('Metadata loaded');
+              resolve();
+            };
+          }
+        });
+        
+        // Now play the video
         try {
           await localVideoRef.current.play();
-          console.log('Local video playing');
+          console.log('Local video is now playing');
         } catch (err) {
           console.error('Play error:', err);
         }
@@ -232,10 +267,10 @@ export default function CallPage() {
               <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
                 <video
                   ref={localVideoRef}
-                  autoPlay
                   muted
                   playsInline
-                  className="w-full h-full object-cover scale-x-[-1]"
+                  style={{ transform: 'scaleX(-1)' }}
+                  className="w-full h-full object-cover"
                 />
                 <div className="absolute bottom-4 left-4 bg-gray-800 px-3 py-1 rounded text-sm">
                   You
