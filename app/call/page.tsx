@@ -24,7 +24,8 @@ export default function CallPage() {
   };
 
   useEffect(() => {
-    socketRef.current = io();
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || '';
+    socketRef.current = io(socketUrl);
 
     socketRef.current.on('user-connected', async (userId: string) => {
       console.log('User connected:', userId);

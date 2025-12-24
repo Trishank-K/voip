@@ -15,7 +15,8 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer, {
     cors: {
-      origin: '*',
+      origin: process.env.CORS_ORIGIN || '*',
+      credentials: true,
     },
   });
 
