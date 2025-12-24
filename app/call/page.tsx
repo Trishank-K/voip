@@ -75,6 +75,15 @@ export default function CallPage() {
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
+        console.log('Local stream set:', stream.getTracks());
+        
+        // Ensure video plays
+        try {
+          await localVideoRef.current.play();
+          console.log('Local video playing');
+        } catch (err) {
+          console.error('Play error:', err);
+        }
       }
 
       socketRef.current?.emit('join-room', roomId);
@@ -226,7 +235,7 @@ export default function CallPage() {
                   autoPlay
                   muted
                   playsInline
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover scale-x-[-1]"
                 />
                 <div className="absolute bottom-4 left-4 bg-gray-800 px-3 py-1 rounded text-sm">
                   You
